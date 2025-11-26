@@ -6,19 +6,25 @@ import {
   getAllProducts,
   updateProduct,
 } from '../controllers/productСontroller';
+import { authMiddleware } from '../middlewares/auth';
 import { validateBody } from '../middlewares/validateBody';
 import { productSchema } from '../schemas/product';
 
 const router = Router();
 
-router.get('/all', getAllProducts);
+router.get('/all', authMiddleware, getAllProducts);
 
-router.get('/', validateBody(productSchema), filterProducts);
+router.get('/', authMiddleware, filterProducts);
 
-router.post('/', validateBody(productSchema), createProduct);
+router.post('/', authMiddleware, validateBody(productSchema), createProduct);
 
-router.put('/:productId', updateProduct);
+router.put(
+  '/:productId',
+  authMiddleware,
+  validateBody(productSchema),
+  updateProduct,
+);
 
-router.delete('/:productId', deleteProduct);
+router.delete('/:productId', authMiddleware, deleteProduct);
 
 export default router;

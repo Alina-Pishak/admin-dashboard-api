@@ -7,6 +7,7 @@ import orderRoutes from "./routes/orderRoutes";
 import productRoutes from "./routes/productRoutes";
 import suppliersRoutes from "./routes/supplierRoutes";
 import customerRoutes from "./routes/customerRoutes";
+import dashboardRoutes from "./routes/dashboardRoutes";
 
 const app = express();
 app.use(cors());
@@ -26,6 +27,8 @@ app.use("/api/products", productRoutes);
 app.use("/api/suppliers", suppliersRoutes);
 
 app.use("/api/customers", customerRoutes);
+
+app.use('/api/dashboard', dashboardRoutes);
 
 app.use(errorHandler);
 

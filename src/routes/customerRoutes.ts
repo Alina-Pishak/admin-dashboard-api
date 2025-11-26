@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { getCustomers } from '../controllers/customerController';
+import { authMiddleware } from '../middlewares/auth';
 
 const router = Router();
 
 // GET list of customers
-router.get('/', getCustomers);
+router.get('/', authMiddleware, getCustomers);
 
 export default router;
