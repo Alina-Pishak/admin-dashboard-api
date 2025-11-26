@@ -3,10 +3,6 @@ import { User } from '../models/User';
 import { IUser } from '../types/user';
 import { generateToken } from '../utils/jwt';
 
-interface AuthenticatedRequest extends Request {
-  user: IUser;
-}
-
 export const loginUser = async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
