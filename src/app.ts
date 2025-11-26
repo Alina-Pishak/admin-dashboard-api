@@ -1,9 +1,12 @@
 import cors from 'cors';
 import express, { Request, Response } from 'express';
 import { errorHandler } from './middlewares/errorHandler';
+
 import userRoutes from "./routes/userRoutes";
 import orderRoutes from "./routes/orderRoutes";
 import productRoutes from "./routes/productRoutes";
+import suppliersRoutes from "./routes/supplierRoutes";
+import customerRoutes from "./routes/customerRoutes";
 
 const app = express();
 app.use(cors());
@@ -20,6 +23,9 @@ app.use("/api/orders", orderRoutes);
 
 app.use("/api/products", productRoutes);
 
+app.use("/api/suppliers", suppliersRoutes);
+
+app.use("/api/customers", customerRoutes);
 
 app.use(errorHandler);
 
