@@ -1,39 +1,23 @@
 import { Schema, model, Document } from "mongoose";
 
 export interface IOrder extends Document {
-  userName: string;
-  userInfo: {
-    email: string;
-    phone: string;
-  };
+  photo: string;
+  name: string;
   address: string;
-  products: Array<{
-    productId: string;
-    quantity: number;
-  }>;
-  orderDate: Date;
+  products: string;
   price: number;
   status: string;
-  action: string;
+  order_date: Date;
 }
 
 const orderSchema = new Schema<IOrder>({
-  userName: { type: String, required: true },
-  userInfo: {
-    email: { type: String },
-    phone: { type: String },
-  },
+  photo: { type: String, required: true },
+  name: { type: String, required: true },
   address: { type: String, required: true },
-  products: [
-    {
-      productId: String,
-      quantity: Number,
-    },
-  ],
-  orderDate: { type: Date, default: Date.now },
+  products: { type: String, required: true },
   price: { type: Number, required: true },
-  status: { type: String, default: "pending" },
-  action: { type: String, default: "" },
+  status: { type: String, required: true },
+  order_date: { type: Date, required: true },
 });
 
 export const Order = model<IOrder>("Order", orderSchema);
