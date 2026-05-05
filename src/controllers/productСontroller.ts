@@ -1,50 +1,41 @@
-import { Request, Response } from "express";
-import Product from "../models/Product";
-
+import { Request, Response } from 'express';
+import Product from '../models/Product';
 
 export const getAllProducts = async (req: Request, res: Response) => {
   try {
     const products = await Product.find();
-    const categories = await Product.distinct("category");
+    const categories = await Product.distinct('category');
 
     res.json({
       products,
       categories,
     });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error });
+    res.status(500).json({ message: 'Server error', error });
   }
 };
 
 export const filterProducts = async (req: Request, res: Response) => {
-
   try {
-    const {
-      sortBy,
-      order,
-      category,
-      name,
-      minPrice,
-      maxPrice,
-      supplier,
-    } = req.query;
+    const { sortBy, order, category, name, minPrice, maxPrice, supplier } =
+      req.query;
 
     const filter: any = {};
 
     // --- Case-insensitive CATEGORY ---
     if (category) {
-      filter.category = { $regex: new RegExp(`^${category}$`, "i") };
+      filter.category = { $regex: new RegExp(`^${category}$`, 'i') };
     }
 
     // --- Case-insensitive PRODUCT NAME (productInfo) ---
     if (name) {
-      filter.productInfo = { $regex: new RegExp(name as string, "i") };
+      filter.name = { $regex: new RegExp(name as string, 'i') };
     }
 
     // --- Case-insensitive SUPPLIER ---
     if (supplier) {
       filter.suppliers = {
-        $elemMatch: { $regex: new RegExp(supplier as string, "i") },
+        $elemMatch: { $regex: new RegExp(supplier as string, 'i') },
       };
     }
 
@@ -61,7 +52,7 @@ export const filterProducts = async (req: Request, res: Response) => {
     // --- SORTING (same as orders) ---
     if (sortBy) {
       query = query.sort({
-        [sortBy as string]: order === "desc" ? -1 : 1,
+        [sortBy as string]: order === 'desc' ? -1 : 1,
       });
     }
 
@@ -70,12 +61,9 @@ export const filterProducts = async (req: Request, res: Response) => {
     return res.status(200).json(products);
   } catch (e) {
     console.error(e);
-    return res.status(500).json({ message: "Error fetching products" });
+    return res.status(500).json({ message: 'Error fetching products' });
   }
 };
-
-
-
 
 export const createProduct = async (req: Request, res: Response) => {
   try {
@@ -84,10 +72,9 @@ export const createProduct = async (req: Request, res: Response) => {
 
     res.status(201).json(saved);
   } catch (error) {
-    res.status(400).json({ message: "Invalid product data", error });
+    res.status(400).json({ message: 'Invalid product data', error });
   }
 };
-
 
 export const updateProduct = async (req: Request, res: Response) => {
   try {
@@ -98,15 +85,14 @@ export const updateProduct = async (req: Request, res: Response) => {
     });
 
     if (!updated) {
-      return res.status(404).json({ message: "Product not found" });
+      return res.status(404).json({ message: 'Product not found' });
     }
 
     res.json(updated);
   } catch (error) {
-    res.status(400).json({ message: "Failed to update", error });
+    res.status(400).json({ message: 'Failed to update', error });
   }
 };
-
 
 export const deleteProduct = async (req: Request, res: Response) => {
   try {
@@ -115,11 +101,11 @@ export const deleteProduct = async (req: Request, res: Response) => {
     const deleted = await Product.findByIdAndDelete(productId);
 
     if (!deleted) {
-      return res.status(404).json({ message: "Product not found" });
+      return res.status(404).json({ message: 'Product not found' });
     }
 
-    res.json({ message: "Product deleted", deleted });
+    res.json({ message: 'Product deleted', deleted });
   } catch (error) {
-    res.status(500).json({ message: "Failed to delete", error });
+    res.status(500).json({ message: 'Failed to delete', error });
   }
 };
