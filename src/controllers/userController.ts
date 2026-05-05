@@ -14,32 +14,18 @@ const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 /** Cookie must work for POST /refresh and POST /logout → path /api/users */
 const REFRESH_COOKIE_PATH = '/api/users';
 
-function refreshCookieFlags(): {
-  sameSite: 'lax' | 'strict' | 'none';
-  secure: boolean;
-} {
-  const raw = (process.env.COOKIE_SAME_SITE || 'lax').toLowerCase();
-  const sameSite =
-    raw === 'strict' || raw === 'none' || raw === 'lax'
-      ? raw
-      : 'lax';
-  let secure =
-    process.env.COOKIE_SECURE === 'true' ||
-    process.env.NODE_ENV === 'production';
-  if (sameSite === 'none') {
-    secure = true;
-  }
-  return { sameSite, secure };
-}
+/** Cross-site frontend + API (різні домени): браузер вимагає None + Secure (HTTPS). */
+const refreshCookieShared = {
+  secure: true,
+  sameSite: 'none' as const,
+  path: REFRESH_COOKIE_PATH,
+};
 
 const setRefreshCookie = (res: Response, refreshToken: string) => {
-  const { sameSite, secure } = refreshCookieFlags();
   res.cookie(REFRESH_COOKIE_NAME, refreshToken, {
+    ...refreshCookieShared,
     httpOnly: true,
-    secure,
-    sameSite,
     maxAge: REFRESH_TOKEN_MAX_AGE,
-    path: REFRESH_COOKIE_PATH,
   });
 };
 
@@ -113,12 +99,9 @@ export const logoutUser = async (req: Request, res: Response) => {
     }
   }
 
-  const { sameSite, secure } = refreshCookieFlags();
   res.clearCookie(REFRESH_COOKIE_NAME, {
+    ...refreshCookieShared,
     httpOnly: true,
-    secure,
-    sameSite,
-    path: REFRESH_COOKIE_PATH,
   });
 
   res.json({ message: 'Logged out successfully' });
