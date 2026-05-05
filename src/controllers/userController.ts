@@ -1,7 +1,25 @@
 import { Request, Response } from 'express';
+import bcrypt from 'bcrypt';
 import { User } from '../models/User';
-import { IUser } from '../types/user';
-import { generateToken } from '../utils/jwt';
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+} from '../utils/jwt';
+import { AuthRequest } from '../middlewares/auth';
+
+const REFRESH_COOKIE_NAME = 'refreshToken';
+const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+
+const setRefreshCookie = (res: Response, refreshToken: string) => {
+  res.cookie(REFRESH_COOKIE_NAME, refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: REFRESH_TOKEN_MAX_AGE,
+    path: '/api/users/refresh',
+  });
+};
 
 export const loginUser = async (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -14,18 +32,81 @@ export const loginUser = async (req: Request, res: Response) => {
   if (!isMatch)
     return res.status(400).json({ message: 'Invalid email or password' });
 
-  const token = generateToken(user.id);
-  res.json({ token });
+  const accessToken = generateAccessToken(user.id);
+  const refreshToken = generateRefreshToken(user.id);
+  const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
+
+  user.refreshToken = refreshTokenHash;
+  await user.save();
+
+  setRefreshCookie(res, refreshToken);
+  res.json({ token: accessToken, accessToken });
 };
 
-export const logoutUser = (req: Request, res: Response) => {
+export const refreshUserToken = async (req: Request, res: Response) => {
+  try {
+    const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME];
+    if (!refreshToken) {
+      return res.status(401).json({ message: 'Refresh token is missing' });
+    }
+
+    const decoded = verifyRefreshToken(refreshToken) as { id: string };
+    const user = await User.findById(decoded.id);
+
+    if (!user || !user.refreshToken) {
+      return res.status(401).json({ message: 'Invalid refresh token' });
+    }
+
+    const tokenMatches = await bcrypt.compare(refreshToken, user.refreshToken);
+    if (!tokenMatches) {
+      return res.status(401).json({ message: 'Invalid refresh token' });
+    }
+
+    const newAccessToken = generateAccessToken(user.id);
+    const newRefreshToken = generateRefreshToken(user.id);
+    user.refreshToken = await bcrypt.hash(newRefreshToken, 10);
+    await user.save();
+
+    setRefreshCookie(res, newRefreshToken);
+
+    return res.json({ token: newAccessToken, accessToken: newAccessToken });
+  } catch (error) {
+    return res.status(401).json({ message: 'Invalid or expired refresh token' });
+  }
+};
+
+export const logoutUser = async (req: Request, res: Response) => {
+  const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME];
+
+  if (refreshToken) {
+    try {
+      const decoded = verifyRefreshToken(refreshToken) as { id: string };
+      const user = await User.findById(decoded.id);
+      if (user) {
+        user.refreshToken = undefined;
+        await user.save();
+      }
+    } catch (error) {
+      // Intentionally ignore token verification errors during logout.
+    }
+  }
+
+  res.clearCookie(REFRESH_COOKIE_NAME, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/api/users/refresh',
+  });
+
   res.json({ message: 'Logged out successfully' });
 };
 
-export const getUserInfo = async (req: Request, res: Response) => {
+export const getUserInfo = async (req: AuthRequest, res: Response) => {
   try {
-    // @ts-ignore
-    const userId = req.user.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
 
     const user = await User.findById(userId).select('-password');
 

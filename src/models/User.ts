@@ -6,6 +6,7 @@ const UserSchema = new Schema<IUser>({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   name: { type: String },
+  refreshToken: { type: String, default: null },
 });
 
 UserSchema.pre('save', async function (next) {

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
 import { User } from "../models/User";
 import { IUser } from "../types/user";
+import { verifyAccessToken } from "../utils/jwt";
 
 export interface AuthRequest extends Request {
   user?: IUser;
@@ -12,7 +12,7 @@ export const authMiddleware = async (req: AuthRequest, res: Response, next: Next
   if (!token) return res.status(401).json({ message: "No token provided" });
 
   try {
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || "your_secret_key");
+    const decoded = verifyAccessToken(token) as { id: string };
     const user = await User.findById(decoded.id);
     if (!user) return res.status(401).json({ message: "User not found" });
     req.user = user;
